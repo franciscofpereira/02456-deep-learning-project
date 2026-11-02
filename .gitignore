@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Hydra run outputs
+outputs/
+multirun/
+
+# Datasets (rebuilt by the code)
+retrieval_data/
+
+# Environments / editors
+.venv/
+venv/
+.env
+.vscode/
+.idea/
+.ipynb_checkpoints/

@@ -2,6 +2,7 @@ import os
 import shutil
 from datasets import Dataset, DatasetDict, load_from_disk
 from src.data_utils.download_retrieval_datasets import get_fiqa_dataset, get_squad_dataset
+import json
 
 class Corpus:
     def __init__(self, dataset_name: str, base_dir: str):
@@ -15,10 +16,14 @@ class Corpus:
             self.relevant_ids = self.__assign_ids()
             os.makedirs(f'{base_dir}/{self.dataset_name}', exist_ok=True)
             DatasetDict(self.ds).save_to_disk(f'{base_dir}/{self.dataset_name}')
+            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json', 'w') as f:  # add
+                json.dump(self.relevant_ids, f)  
             print(f'Saved {self.dataset_name} dataset to path {base_dir}/{self.dataset_name}.')
             shutil.rmtree(f'{base_dir}/raw')
         else:
             self.ds = load_from_disk(f'{base_dir}/{self.dataset_name}')
+            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json') as f:  # add
+                self.relevant_ids = json.load(f)
 
 
     @property

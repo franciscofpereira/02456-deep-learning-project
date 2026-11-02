@@ -1,12 +1,15 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
 import numpy as np
-from scipy.sparse import lil_matrix
-
+from scipy.sparse import csr_matrix
+import re
+import math
+from collections import Counter
 
 class TFIDF(Retriever):
     def __init__(self, documents: list[dict] = None, index_path: str = None) -> None:
         super(TFIDF, self).__init__(documents, index_path)
+        self.doc_tokens = [self.PreprocessText(doc.GetText()) for doc in self.index.GetDocuments()]
         self.corpus_vocabulary = self.GetCorpusVocabulary()
         self.idf = self.GetInverseDocumentFrequencies()
 
@@ -18,79 +21,92 @@ class TFIDF(Retriever):
         """
         Remove unwanted charatcters from text and lowercase
         """
-        raise NotImplementedError()
+        text = text.lower()
+        text = re.sub(r"[^a-z0-9\s]", " ", text)  # replace non-alphanumerics with space
+
+        # potentially add stopword removal and stemming
+
+        return text.split()  
         
     def GetQueryVocabulary(self, query: str) -> list[str]:
         """
         Returns all unique words in a query
         """
-        raise NotImplementedError()
+        return list(dict.fromkeys(self.PreprocessText(query)))
 
     def GetDocumentVocabulary(self, document: Document) -> list[str]:
         """
         Returns all unique words in a document
         """
-        raise NotImplementedError()
-    
+        return list(dict.fromkeys(self.PreprocessText(document.GetText())))
+
     def GetCorpusVocabulary(self) -> set[str]:
         """
         Returns all unique words in ALL documents.
         """
-        # Use map function for more efficient processing
-        processed_texts = map(lambda doc: set(self.PreprocessText(doc.GetText())), self.index.GetDocuments())
-        corpus_vocabulary = set().union(*processed_texts)
-        return corpus_vocabulary
+        return set().union(*self.doc_tokens)  # union of all document vocabularies
 
     def GetDocumentFrequencies(self) -> dict[str, int]:
         """
         Returns a dict with terms and counts of how many documents the term occurs in (counted once per document).
         """
-        raise NotImplementedError()
-       
-    
+        df = Counter()
+        for tokens in self.doc_tokens:
+            df.update(set(tokens))  
+        return dict(df)
+
     def GetInverseDocumentFrequencies(self) -> dict[str, float]:
         """
         Returns a dict with terms and their corresponding inverse document frequencies.
         """
-        raise NotImplementedError()
+        n_documents = len(self.index.GetDocuments())
+        return {term: math.log(n_documents / df) for term, df in self.GetDocumentFrequencies().items()}
     
     
     def GetDocumentTermCounts(self, document: Document):
         """
         Returns a dict on the form {term: num_occurences} for an input Document.
         """
-        raise NotImplementedError()
+        return Counter(self.PreprocessText(document.GetText()))
 
     def GetDocumentsTFIDFVectors(self):
         """
         Returns a n_documents x n_terms matrix whose element (i, j) is the td-idf score of the j'th term in the i'th document.
         """
-        # Create a mapping from terms to indices
         self.term_to_index = {term: idx for idx, term in enumerate(self.corpus_vocabulary)}
 
-        # Initialize a sparse matrix
-        n_documents = len(self.index.GetDocuments())
+        n_documents = len(self.doc_tokens)
         n_terms = len(self.corpus_vocabulary)
-        tfidf_matrix = lil_matrix((n_documents, n_terms), dtype=np.float32)
+        rows, cols, vals = [], [], []
 
-        # TODO: Add tf-idf code
-        
-        return tfidf_matrix.tocsr()   # Convert to CSR format for efficient row slicing
+        # raw term frequency × inverse document frequency
+        for doc_idx, tokens in enumerate(self.doc_tokens):
+            for term, count in Counter(tokens).items():
+                rows.append(doc_idx)
+                cols.append(self.term_to_index[term])
+                vals.append(count * self.idf[term])
+
+        return csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
     
     def QueryToVector(self, queries: list[str]):
         """ Converts a query or batch of queries into a sparse vector matching the vocab size with counts of how many times the term occurs.
-        
-        Args:
-            query (str): The query to convert
-        
-        Returns:
-            csr_matrix: A sparse vector representation of the query
+                
+                Args:
+                    query (str): The query to convert
+                
+                Returns:
+                    csr_matrix: A sparse vector representation of the query
         """
-        query_vector = lil_matrix((len(queries), len(self.corpus_vocabulary)), dtype=np.float32)
-
-        # TODO: add code
-
-        return query_vector.tocsr()
+        rows, cols, vals = [], [], []
+        for i, query in enumerate(queries):
+            for term, count in Counter(self.PreprocessText(query)).items():
+                j = self.term_to_index.get(term)
+                if j is not None:
+                    rows.append(i)
+                    cols.append(j)
+                    vals.append(count)
+                    
+        return csr_matrix((vals, (rows, cols)), shape=(len(queries), len(self.corpus_vocabulary)), dtype=np.float32)
 
     #@time_func
     def CalculateScores(self, queries: list[str]):
