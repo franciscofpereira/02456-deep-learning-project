@@ -1,10 +1,11 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
 import numpy as np
-from scipy.sparse import csr_matrix
 import re
 import math
 from collections import Counter
+from scipy.sparse import csr_matrix, diags  
+
 
 class TFIDF(Retriever):
     def __init__(self, documents: list[dict] = None, index_path: str = None) -> None:
@@ -86,8 +87,11 @@ class TFIDF(Retriever):
                 cols.append(self.term_to_index[term])
                 vals.append(count * self.idf[term])
 
-        return csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
-    
+        tfidf_matrix = csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
+        norms = np.sqrt(tfidf_matrix.multiply(tfidf_matrix).sum(axis=1)).A1
+        norms[norms == 0] = 1  # avoid dividing by zero for empty documents
+        return (diags(1 / norms) @ tfidf_matrix).tocsr()  # divides documents by their own length, normalizing tf-idf vectors
+       
     def QueryToVector(self, queries: list[str]):
         """ Converts a query or batch of queries into a sparse vector matching the vocab size with counts of how many times the term occurs.
                 

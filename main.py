@@ -22,21 +22,7 @@ def main(cfg):
     
     ### Initialize TF-IDF class
     tf_idf = TFIDF(documents=corpus.all_documents)
-
-    row = corpus.train[0]
-    print('Question:', row['question'])
-    print('Query ID:', row['query_id'])
-    print('Document IDs:', row['document_id'])
-    print('First document:', row['text'][0])
-
-    # print number of queries
-    #print(f'Number of train queries: {len(train_queries)}')
-    #print(f'Number of val queries: {len(val_queries)}')
-    #print(f'Number of test queries: {len(test_queries)}')
-    #print(f'Number of documents in corpus: {sum(len(ids) for ids in corpus.all_documents["document_id"])}')
-    #print(f'Number of relevant documents in corpus: {len(corpus.relevant_ids)}')
-    #print(f'Number of terms in corpus vocabulary: {len(tf_idf.corpus_vocabulary)}')
-     
+    
     ### Retrieve top-k relevant queries
     tfidf_train_relevancies = retrieveQueryAndGetRelevancies(tf_idf, train_queries, k=cfg.top_k)
     tfidf_val_relevancies = retrieveQueryAndGetRelevancies(tf_idf, val_queries, k=cfg.top_k)
