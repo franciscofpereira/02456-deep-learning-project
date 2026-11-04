@@ -30,7 +30,7 @@ def main(cfg):
                            ) 
                         for idx in range(corpus.test.num_rows)
                     ]
-    
+    """
     ### Initialize TF-IDF class
     tf_idf = TFIDF(documents=corpus.all_documents)
     
@@ -46,7 +46,7 @@ def main(cfg):
 
     print(f'Train results: {train_scores}')
     print(f'Val results: {val_scores}')
-    print(f'Test results: {test_scores}')
+    print(f'Test results: {test_scores}') """
 
 if __name__ == '__main__':
     main()
