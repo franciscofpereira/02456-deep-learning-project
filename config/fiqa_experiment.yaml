@@ -2,8 +2,10 @@ defaults:
   - _self_  # Hydra magic
   - dataset: fiqa
   - retriever: tf_idf
+  - model: encoder
 
-
+max_seq_length: 256
+batch_size: 64
 device: cpu
 base_path: "."
 top_k: 10
