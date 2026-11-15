@@ -100,4 +100,19 @@ class Corpus:
             self.ds[key] = self.ds[key].add_column('document_id', document_ids)
 
         return relevant_document_ids
-            
+
+
+
+    def get_batch(self, batch_size: int, split: str = 'train', shuffle: bool = True):
+        '''
+        Get a batch of data from the specified split.
+        '''
+        assert split in ['train', 'val', 'test'], f'Split {split} not supported. Options are ["train", "val", "test"]'
+        dataset = self.ds[split]
+        if shuffle:
+            dataset = dataset.shuffle()
+        
+        for i in range(0, len(dataset), batch_size):
+            yield dataset[i:i + batch_size]
+
+        

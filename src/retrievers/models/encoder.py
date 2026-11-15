@@ -4,7 +4,19 @@ import torch.nn.functional as F
 from math import sqrt
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, n_layers: int, n_heads: int, emb_dim: int, hidden_dim: int, feed_forward_dim: int, pooling_type: str):
+    def __init__(
+        self,
+        n_layers: int,
+        n_heads: int,
+        emb_dim: int,
+        hidden_dim: int,
+        feed_forward_dim: int,
+        pooling_type: str,
+        vocab_size: int,
+        max_seq_length: int,
+        token_embedding: nn.Embedding | None = None,
+        pos_embedding: nn.Embedding | None = None,
+    ):
         """
         Initialize the TransformerEncoder.
         """
@@ -15,6 +27,16 @@ class TransformerEncoder(nn.Module):
         self.hidden_dim = hidden_dim
         self.feed_forward_dim = feed_forward_dim
         self.pooling_type = pooling_type
+        self.vocab_size = vocab_size
+        self.max_seq_length = max_seq_length
+
+        self.token_embedding = (
+            token_embedding if token_embedding is not None else nn.Embedding(self.vocab_size, emb_dim)
+        )
+        self.pos_embedding = (
+            pos_embedding if pos_embedding is not None else nn.Embedding(max_seq_length, emb_dim)
+        )
+
         self.model = self.setup_model()
 
     def setup_model(self):
@@ -52,10 +74,14 @@ class TransformerEncoder(nn.Module):
                 return (x * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1e-9)
             return torch.mean(x, dim=1)
         
-    def forward(self, x: torch.tensor, attention_mask: torch.tensor = None) -> torch.tensor:
+    def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor = None) -> torch.tensor:
         """
-        Run a forward pass on the model
+        Combines token embeddings with positional embeddings and runs a forward pass on the model
         """
+
+        positions = torch.arange(input_ids.size(1), device=input_ids.device)
+        x = self.token_embedding(input_ids) + self.pos_embedding(positions)
+
         # x is a tensor of dimensions batch_size x sequence_length x emb_dim
         # Pass the input through the transformer encoder
         key_padding_mask = (attention_mask == 0) if attention_mask is not None else None
@@ -63,5 +89,5 @@ class TransformerEncoder(nn.Module):
         
         # Pool the output to get a single vector representation for each input sequence
         x = self.pool(x, attention_mask)
-        
+
         return x

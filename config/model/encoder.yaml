@@ -4,3 +4,5 @@ hidden_dim: 32
 n_heads: 4
 n_layers: 6
 feed_forward_dim: 768
+query_encoder_weights_path: "retrieval_data/query_encoder_weights.pt"
+document_encoder_weights_path: "retrieval_data/document_encoder_weights.pt"
