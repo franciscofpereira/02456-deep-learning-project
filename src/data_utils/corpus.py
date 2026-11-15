@@ -102,7 +102,6 @@ class Corpus:
         return relevant_document_ids
 
 
-
     def get_batch(self, batch_size: int, split: str = 'train', shuffle: bool = True):
         '''
         Get a batch of data from the specified split.
@@ -114,5 +113,12 @@ class Corpus:
         
         for i in range(0, len(dataset), batch_size):
             yield dataset[i:i + batch_size]
+
+    def get_length(self, split: str = 'train'):
+        '''
+        Get the length of the specified split.
+        '''
+        assert split in ['train', 'val', 'test'], f'Split {split} not supported. Options are ["train", "val", "test"]'
+        return len(self.ds[split])
 
         

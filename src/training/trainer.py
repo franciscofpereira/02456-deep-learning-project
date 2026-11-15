@@ -3,6 +3,7 @@ import torch
 from src.training.loss import DPRLoss
 from src.data_utils.corpus import Corpus
 from src.retrievers.models.encoder import TransformerEncoder
+from tqdm import tqdm
 import random
 
 class Trainer:
@@ -31,13 +32,21 @@ class Trainer:
         document_encoder.to(self.device).train()
 
         max_seq_length = query_encoder.max_seq_length
+        total_batches = (corpus.get_length("train") + batch_size - 1) // batch_size if corpus.get_length("train") else None
 
         for epoch in range(epochs):
   
             total_loss = 0.0
             total_samples = 0
 
-            for batch in corpus.get_batch(batch_size, split='train', shuffle=True):
+            pbar = tqdm(
+                corpus.get_batch(batch_size, split="train", shuffle=True),
+                total=total_batches,
+                desc=f"Epoch {epoch:02d}/{epochs:02d}",
+                unit="batch",
+            )
+
+            for batch in pbar:
                 
                 optimizer.zero_grad()
 
@@ -80,13 +89,17 @@ class Trainer:
                 total_loss += loss.item() * b_len
                 total_samples += b_len
 
-            print(f"Epoch {epoch:02d}/{epochs:02d} | Train Loss: {total_loss / total_samples:.4f}")
+                pbar.set_postfix(
+                    loss=f"{loss.item():.4f}",
+                    avg_loss=f"{total_loss / total_samples:.4f}",
+                )
+
+        query_encoder.eval()
+        document_encoder.eval()  
         
-    
         os.makedirs(os.path.dirname(query_encoder_weights_path), exist_ok=True)
         os.makedirs(os.path.dirname(document_encoder_weights_path), exist_ok=True)
         torch.save(query_encoder.state_dict(), query_encoder_weights_path)
         torch.save(document_encoder.state_dict(), document_encoder_weights_path)
 
-        query_encoder.eval()
-        document_encoder.eval()
+        
