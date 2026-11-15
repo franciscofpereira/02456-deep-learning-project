@@ -118,13 +118,13 @@ class DPR(Retriever):
             return self.doc_embeddings
 
         texts = [doc.text for doc in self.index.GetDocuments()]
-        doc_embeddings = self.Encode(texts, batch_size)
+        self.doc_embeddings = self.Encode(texts, batch_size)
 
         # Save document embeddings to file
         os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        torch.save(doc_embeddings, save_path)
+        torch.save(self.doc_embeddings, save_path)
 
-        return doc_embeddings
+        return self.doc_embeddings
 
 
     def CalculateScores(self, queries: list[str]):
