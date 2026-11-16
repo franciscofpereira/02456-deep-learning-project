@@ -5,10 +5,10 @@ defaults:
   - model: pre_trained_model
 
 document_embeddings_path: "retrieval_data/document_embeddings.pt"
-batch_size: 128
-learning_rate: 5e-4
-epochs: 25
-max_seq_length: 512
+batch_size: 32
+learning_rate: 3e-5
+epochs: 5
+max_seq_length: 256
 device: cpu
 base_path: "."
 top_k: 10
