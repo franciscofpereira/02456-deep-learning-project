@@ -49,18 +49,18 @@ class DPR(Retriever):
 
         self.document_encoder = self.query_encoder
 
-            """ self.document_encoder = TransformerEncoder(
-                self.cfg.model.n_layers,
-                self.cfg.model.n_heads,
-                self.cfg.model.emb_dim,
-                self.cfg.model.hidden_dim,
-                self.cfg.model.feed_forward_dim,
-                self.cfg.model.pooling_type,
-                self.tokenizer.vocab_size,
-                self.cfg.max_seq_length
-                token_embedding=self.query_encoder.token_embedding,
-                pos_embedding=self.query_encoder.pos_embedding
-                ) """
+        """ self.document_encoder = TransformerEncoder(
+            self.cfg.model.n_layers,
+            self.cfg.model.n_heads,
+            self.cfg.model.emb_dim,
+            self.cfg.model.hidden_dim,
+            self.cfg.model.feed_forward_dim,
+            self.cfg.model.pooling_type,
+            self.tokenizer.vocab_size,
+            self.cfg.max_seq_length
+            token_embedding=self.query_encoder.token_embedding,
+            pos_embedding=self.query_encoder.pos_embedding
+            ) """
 
         self.query_encoder.eval()
         self.document_encoder.eval()
