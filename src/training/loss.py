@@ -13,4 +13,7 @@ class DPRLoss(nn.Module):
         documents = F.normalize(documents, p=2, dim=-1)
         scores = (queries @ documents.T) / self.temperature
         labels = torch.arange(scores.size(0), device=scores.device)
-        return F.cross_entropy(scores, labels)
+
+        loss_q2d = F.cross_entropy(scores, labels)
+        loss_d2q = F.cross_entropy(scores.T, labels)
+        return 0.5 * (loss_q2d + loss_d2q)

@@ -28,7 +28,7 @@ class Trainer:
     ):
 
         params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
-        optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.01)
+        optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.05)
 
         if hasattr(corpus, "ds") and "train" in corpus.ds:
             train_len = len(corpus.ds["train"])
@@ -37,7 +37,7 @@ class Trainer:
             total_batches = sum(1 for _ in corpus.get_batch(batch_size, split="train", shuffle=False))
 
         total_steps = total_batches * epochs
-        
+
         scheduler = torch.optim.lr_scheduler.OneCycleLR(
             optimizer,
             max_lr=learning_rate,

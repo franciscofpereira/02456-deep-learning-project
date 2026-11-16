@@ -49,7 +49,7 @@ class TransformerEncoder(nn.Module):
                 d_model=self.emb_dim,
                 nhead=self.n_heads,
                 dim_feedforward=self.feed_forward_dim,
-                dropout=0.1,
+                dropout=0.2,
                 activation='gelu',
                 batch_first=True,
                 norm_first=True,
