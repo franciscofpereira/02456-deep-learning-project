@@ -1,6 +1,6 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
-from src.retrievers.models.encoder import TransformerEncoder
+from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder
 from transformers import AutoTokenizer
 import torch
 import torch.nn as nn
@@ -23,33 +23,46 @@ class DPR(Retriever):
         
     def __load_models(self):
         # n_heads, n_layers, emb_in, hidden_dim, feed_forward_dim
+        pretrained_name = getattr(self.cfg.model, "pretrained_model_name", None)
 
-        # Encode queries and documents and store them and move them to device
-        self.query_encoder = TransformerEncoder(
-            self.cfg.model.n_layers,
-            self.cfg.model.n_heads,
-            self.cfg.model.emb_dim,
-            self.cfg.model.hidden_dim, 
-            self.cfg.model.feed_forward_dim, 
-            self.cfg.model.pooling_type, 
-            self.tokenizer.vocab_size, 
-            self.cfg.max_seq_length
+        if pretrained_name is not None:
+            self.query_encoder = PretrainedEncoder(
+                model_name=pretrained_name,
+                pooling_type=self.cfg.model.pooling_type,
+                emb_dim=self.cfg.model.emb_dim
             )
+            self.document_encoder = PretrainedEncoder(
+                model_name=pretrained_name,
+                pooling_type=self.cfg.model.pooling_type,
+                emb_dim=self.cfg.model.emb_dim
+            )
+        else:
+            # Encode queries and documents and store them and move them to device
+            self.query_encoder = TransformerEncoder(
+                self.cfg.model.n_layers,
+                self.cfg.model.n_heads,
+                self.cfg.model.emb_dim,
+                self.cfg.model.hidden_dim, 
+                self.cfg.model.feed_forward_dim, 
+                self.cfg.model.pooling_type, 
+                self.tokenizer.vocab_size, 
+                self.cfg.max_seq_length
+                )
 
-        self.document_encoder = self.query_encoder
+            self.document_encoder = self.query_encoder
 
-        """ self.document_encoder = TransformerEncoder(
-            self.cfg.model.n_layers,
-            self.cfg.model.n_heads,
-            self.cfg.model.emb_dim,
-            self.cfg.model.hidden_dim,
-            self.cfg.model.feed_forward_dim,
-            self.cfg.model.pooling_type,
-            self.tokenizer.vocab_size,
-            self.cfg.max_seq_length
-            token_embedding=self.query_encoder.token_embedding,
-            pos_embedding=self.query_encoder.pos_embedding
-            ) """
+            """ self.document_encoder = TransformerEncoder(
+                self.cfg.model.n_layers,
+                self.cfg.model.n_heads,
+                self.cfg.model.emb_dim,
+                self.cfg.model.hidden_dim,
+                self.cfg.model.feed_forward_dim,
+                self.cfg.model.pooling_type,
+                self.tokenizer.vocab_size,
+                self.cfg.max_seq_length
+                token_embedding=self.query_encoder.token_embedding,
+                pos_embedding=self.query_encoder.pos_embedding
+                ) """
 
         self.query_encoder.eval()
         self.document_encoder.eval()
