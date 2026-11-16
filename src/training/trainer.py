@@ -8,7 +8,7 @@ from tqdm import tqdm
 import random
 
 class Trainer:
-    def __init__(self, device: torch.device, cfg=None, temperature = 0.05):
+    def __init__(self, device: torch.device, cfg=None, temperature = 0.1):
         self.criterion = DPRLoss(temperature=temperature)
         self.device = device
         self.cfg = cfg
@@ -28,7 +28,7 @@ class Trainer:
     ):
 
         params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
-        optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.05)
+        optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.1)
 
         if hasattr(corpus, "ds") and "train" in corpus.ds:
             train_len = len(corpus.ds["train"])

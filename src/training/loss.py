@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class DPRLoss(nn.Module):
-    def __init__(self, temperature: float = 0.05):
+    def __init__(self, temperature: float = 0.1):
         super().__init__()
         self.temperature = temperature
 

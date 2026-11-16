@@ -7,8 +7,8 @@ defaults:
 document_embeddings_path: "retrieval_data/document_embeddings.pt"
 batch_size: 128
 learning_rate: 5e-4
-epochs: 30
-max_seq_length: 256
+epochs: 15
+max_seq_length: 512
 device: cpu
 base_path: "."
 top_k: 10
