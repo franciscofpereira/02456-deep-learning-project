@@ -3,7 +3,7 @@ from sched import scheduler
 import torch
 from src.training.loss import DPRLoss
 from src.data_utils.corpus import Corpus
-from src.retrievers.models.encoder import TransformerEncoder
+from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder
 from tqdm import tqdm
 import random
 
@@ -15,8 +15,8 @@ class Trainer:
         
     def train(
             self,
-            query_encoder: TransformerEncoder,
-            document_encoder: TransformerEncoder,
+            query_encoder: TransformerEncoder | PretrainedEncoder,
+            document_encoder: TransformerEncoder | PretrainedEncoder,
             corpus: Corpus,
             tokenizer,
             epochs: int = 10,

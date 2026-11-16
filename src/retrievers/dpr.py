@@ -26,16 +26,21 @@ class DPR(Retriever):
         pretrained_name = getattr(self.cfg.model, "pretrained_model_name", None)
 
         if pretrained_name is not None:
+            
             self.query_encoder = PretrainedEncoder(
                 model_name=pretrained_name,
                 pooling_type=self.cfg.model.pooling_type,
-                emb_dim=self.cfg.model.emb_dim
+                emb_dim=self.cfg.model.emb_dim,
+                max_seq_length=self.cfg.max_seq_length
             )
+
             self.document_encoder = PretrainedEncoder(
                 model_name=pretrained_name,
                 pooling_type=self.cfg.model.pooling_type,
-                emb_dim=self.cfg.model.emb_dim
+                emb_dim=self.cfg.model.emb_dim,
+                max_seq_length=self.cfg.max_seq_length
             )
+            
         else:
             # Encode queries and documents and store them and move them to device
             self.query_encoder = TransformerEncoder(
