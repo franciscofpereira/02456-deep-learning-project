@@ -3,6 +3,7 @@ import numpy as np
 import math
 from collections import Counter
 from scipy.sparse import csr_matrix, diags  
+from src.data_utils.query import Query
 
 class BM25(TFIDF):
     def __init__(self, documents: list[dict] = None, index_path: str = None, k1: float = 1.5, b: float = 0.75) -> None:
@@ -74,3 +75,38 @@ class BM25(TFIDF):
         query_vector = self.QueryToVector(queries)
         scores = query_vector.dot(self.bm25_matrix.T).toarray()
         return scores
+
+
+    def mine_hard_negatives(self, queries: list[Query], top_k: int = 20) -> list[str]:
+            """
+            For each Query object, find the highest-scoring TF-IDF document
+            that is NOT in query.relevant_document_ids.
+            """
+    
+            query_texts = [q.text for q in queries]
+            scores = self.CalculateScores(query_texts)
+            top_k_indices = np.argsort(scores, axis=1)[:, -top_k:][:, ::-1]
+    
+            all_docs = self.index.GetDocuments()
+            hard_negatives = []
+    
+            for i, query in enumerate(queries):
+                positive_ids = set(query.relevant_document_ids)
+                chosen_text = None
+    
+                for idx in top_k_indices[i]:
+                    document = all_docs[idx]
+                    if document._id not in positive_ids:
+                        chosen_text = document.text
+                        break
+    
+                # Fallback if all top_k documents were ground-truth positives
+                if chosen_text is None:
+                    for document in all_docs:
+                        if document._id not in positive_ids:
+                            chosen_text = document.text
+                            break
+    
+                hard_negatives.append(chosen_text)
+    
+            return hard_negatives

@@ -1,8 +1,8 @@
 pooling_type: 'mean' # mean | cls | max
-emb_dim: 256
+emb_dim: 128
 hidden_dim: 32
 n_heads: 4
 n_layers: 3
-feed_forward_dim: 1024
+feed_forward_dim: 256
 query_encoder_weights_path: "retrieval_data/query_encoder_weights.pt"
 document_encoder_weights_path: "retrieval_data/document_encoder_weights.pt"
