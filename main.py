@@ -47,7 +47,7 @@ def main(cfg):
 
     if cfg.retriever.method == "tf_idf":
         
-        """ tf_idf = TFIDF(documents=corpus.all_documents)
+        tf_idf = TFIDF(documents=corpus.all_documents)
         
         ### Retrieve top-k relevant queries
         tfidf_train_relevancies = retrieveQueryAndGetRelevancies(tf_idf, train_queries, k=cfg.top_k)
@@ -61,12 +61,12 @@ def main(cfg):
 
         print(f'TF-IDF Train results: {train_scores}')
         print(f'TF-IDF Val results: {val_scores}')
-        print(f'TF-IDF Test results: {test_scores}') """    
+        print(f'TF-IDF Test results: {test_scores}')    
 
     # Initialize BM25 class
 
     elif cfg.retriever.method == "bm25":
-        """ bm25 = BM25(documents=corpus.all_documents)
+        bm25 = BM25(documents=corpus.all_documents)
             
         ### Retrieve top-k relevant queries
         bm25_train_relevancies = retrieveQueryAndGetRelevancies(bm25, train_queries, k=cfg.top_k)
@@ -80,11 +80,10 @@ def main(cfg):
 
         print(f'BM25 Train results: {train_scores}')
         print(f'BM25 Val results: {val_scores}')
-        print(f'BM25 Test results: {test_scores}') """
+        print(f'BM25 Test results: {test_scores}') 
  
-    
-        """ first_query = train_queries[0]
-        print(f'First query: {first_query.text}') """
+        first_query = train_queries[0]
+        print(f'First query: {first_query.text}')
 
     # Initialize DPR class
     
