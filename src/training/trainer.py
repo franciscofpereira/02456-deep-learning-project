@@ -51,6 +51,9 @@ class Trainer:
         max_seq_length = query_encoder.max_seq_length
         total_batches = (corpus.get_length("train") + batch_size - 1) // batch_size if corpus.get_length("train") else None
 
+        use_amp = self.device.type == "cuda"
+        scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+
         for epoch in range(epochs):
   
             total_loss = 0.0
@@ -88,19 +91,21 @@ class Trainer:
                     ).to(self.device)
 
                 # Run forward pass through query
-                query_embeddings = query_encoder(
-                    query_tokenized['input_ids'], query_tokenized['attention_mask']
+                with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
+                    query_embeddings = query_encoder(
+                        query_tokenized["input_ids"], query_tokenized["attention_mask"]
                     )
-
-                # Run forward pass through document
-                positive_document_embeddings = document_encoder(
-                    document_tokenized['input_ids'], document_tokenized['attention_mask']
+                    positive_document_embeddings = document_encoder(
+                        document_tokenized["input_ids"], document_tokenized["attention_mask"]
                     )
 
                 # Compute loss, propagate gradients, and update model parameters
                 loss = self.criterion(query_embeddings, positive_document_embeddings)
-                loss.backward()
-                optimizer.step()
+                scaler.scale(loss).backward()
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(params, max_norm=1.0)
+                scaler.step(optimizer)
+                scaler.update()
                 scheduler.step()
 
                 b_len = query_embeddings.size(0)

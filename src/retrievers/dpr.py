@@ -40,7 +40,7 @@ class DPR(Retriever):
                 emb_dim=self.cfg.model.emb_dim,
                 max_seq_length=self.cfg.max_seq_length
             )
-            
+
         else:
             # Encode queries and documents and store them and move them to device
             self.query_encoder = TransformerEncoder(
@@ -106,6 +106,8 @@ class DPR(Retriever):
 
         self.document_encoder.eval()
 
+        use_amp = str(self.device).startswith("cuda")
+
         all_embeddings = []
 
         print(f'len texts = {len(texts)}')
@@ -118,8 +120,9 @@ class DPR(Retriever):
                 input_ids = tokenized_batch["input_ids"].to(self.device)
                 attention_mask = tokenized_batch["attention_mask"].to(self.device)
 
-                batch_embeddings = self.document_encoder(input_ids, attention_mask)
-
+                with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
+                    batch_embeddings = self.document_encoder(input_ids, attention_mask)
+                    
                 all_embeddings.append(batch_embeddings.cpu())
 
         # 4. Combine all batches -> (len(texts), emb_dim)
