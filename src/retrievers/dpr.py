@@ -15,9 +15,11 @@ class DPR(Retriever):
         self.cfg = cfg
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", local_files_only=True)
         self.__load_models()
+
+        self.doc_embeddings = None
+        if index_path is not None and os.path.exists(index_path):
+            self.doc_embeddings = torch.load(index_path, map_location="cpu", weights_only=True)
         
-        self.doc_embeddings = self.BuildDocumentEmbeddings(batch_size=self.cfg.batch_size,)
-    
     def __load_models(self):
         # n_heads, n_layers, emb_in, hidden_dim, feed_forward_dim
 
@@ -90,8 +92,8 @@ class DPR(Retriever):
         self.query_encoder.eval()
         all_embeddings = []
 
-        print(f"Query Tokens: {self.tokenizer.tokenize(queries[0])}")
-        print(f"Query IDs: {self.tokenizer(queries[0])['input_ids']}")
+        #print(f"Query Tokens: {self.tokenizer.tokenize(queries[0])}")
+        #print(f"Query IDs: {self.tokenizer(queries[0])['input_ids']}")
 
         with torch.no_grad():
             for i in range(0, len(queries), batch_size):
