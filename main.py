@@ -28,7 +28,7 @@ def main(cfg):
 
     print(f"Config: \n {OmegaConf.to_yaml(cfg)}")
 
-    device = torch.device(cfg.device if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda") if torch.cuda.is_available() else torch.device(cfg.device)
 
     # Load a dataset
     corpus = Corpus(dataset_name=cfg.dataset.name, base_dir=f'{cfg.base_path}/retrieval_data')
