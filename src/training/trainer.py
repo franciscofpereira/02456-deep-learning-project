@@ -25,7 +25,7 @@ class Trainer:
             max_seq_length: int = 256,
             query_encoder_weights_path: str = "retrieval_data/query_encoder_weights.pt",
             document_encoder_weights_path: str = "retrieval_data/document_encoder_weights.pt",  
-            hard_negatives: list[str] = None     
+            hard_negatives: list[str] | None = None     
     ):
 
         params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
@@ -54,6 +54,12 @@ class Trainer:
 
         use_amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
+
+        # add hard negatives to the corpus
+        if hard_negatives is not None and hasattr(corpus, "ds") and "train" in corpus.ds:
+            if "hard_negative" in corpus.ds["train"].column_names:
+                corpus.ds["train"] = corpus.ds["train"].remove_columns(["hard_negative"])
+            corpus.ds["train"] = corpus.ds["train"].add_column("hard_negative", hard_negatives)
 
         for epoch in range(epochs):
   
@@ -101,10 +107,10 @@ class Trainer:
                     )
 
                 # If hard negatives are provided, compute their embeddings
-                if "hard_negatives" is not None:
+                train_data = corpus.train
+                
+                if "hard_negative" not in batch:
 
-                    train_dataset = train_dataset.add_column("hard_negative", hard_negatives)
-                    
                     neg_tokenized = tokenizer(
                         batch["hard_negative"],
                         padding=True,
@@ -122,7 +128,6 @@ class Trainer:
                     )
 
                 else:
-                    
                     all_doc_embeddings = positive_document_embeddings
 
                 # Compute loss, propagate gradients, and update model parameters
