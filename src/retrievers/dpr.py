@@ -34,13 +34,6 @@ class DPR(Retriever):
                 max_seq_length=self.cfg.max_seq_length
             )
 
-            self.document_encoder = PretrainedEncoder(
-                model_name=pretrained_name,
-                pooling_type=self.cfg.model.pooling_type,
-                emb_dim=self.cfg.model.emb_dim,
-                max_seq_length=self.cfg.max_seq_length
-            )
-
         else:
             # Encode queries and documents and store them and move them to device
             self.query_encoder = TransformerEncoder(
@@ -54,7 +47,7 @@ class DPR(Retriever):
                 self.cfg.max_seq_length
                 )
 
-            self.document_encoder = self.query_encoder
+        self.document_encoder = self.query_encoder
 
             """ self.document_encoder = TransformerEncoder(
                 self.cfg.model.n_layers,
@@ -122,7 +115,7 @@ class DPR(Retriever):
 
                 with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
                     batch_embeddings = self.document_encoder(input_ids, attention_mask)
-                    
+
                 all_embeddings.append(batch_embeddings.cpu())
 
         # 4. Combine all batches -> (len(texts), emb_dim)
