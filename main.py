@@ -98,7 +98,7 @@ def main(cfg):
         ):
 
             bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
-            hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=cfg.top_k)
+            hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5)
 
             trainer = Trainer(device)
 

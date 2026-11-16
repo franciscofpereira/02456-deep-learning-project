@@ -77,36 +77,33 @@ class BM25(TFIDF):
         return scores
 
 
-    def mine_hard_negatives(self, queries: list[Query], top_k: int = 20) -> list[str]:
-            """
-            For each Query object, find the highest-scoring BM-25 document
-            that is NOT in query.relevant_document_ids.
-            """
-    
-            query_texts = [q.text for q in queries]
-            scores = self.CalculateScores(query_texts)
-            top_k_indices = np.argsort(scores, axis=1)[:, -top_k:][:, ::-1]
-    
-            all_docs = self.index.GetDocuments()
-            hard_negatives = []
-    
-            for i, query in enumerate(queries):
-                positive_ids = set(query.relevant_document_ids)
-                chosen_text = None
-    
-                for idx in top_k_indices[i]:
-                    document = all_docs[idx]
+    def mine_hard_negatives(
+        self, queries: list[Query], top_k: int = 30, skip_top: int = 5
+    ) -> list[str]:
+        query_texts = [q.text for q in queries]
+        scores = self.CalculateScores(query_texts)
+        top_k_indices = np.argsort(scores, axis=1)[:, -top_k:][:, ::-1]
+
+        all_docs = self.index.GetDocuments()
+        hard_negatives = []
+
+        for i, query in enumerate(queries):
+            positive_ids = set(query.relevant_document_ids)
+            chosen_text = None
+
+            # Only change: [skip_top:] skips the top 5 BM25 hits
+            for idx in top_k_indices[i][skip_top:]:
+                document = all_docs[idx]
+                if document._id not in positive_ids:
+                    chosen_text = document.text
+                    break
+
+            if chosen_text is None:
+                for document in all_docs:
                     if document._id not in positive_ids:
                         chosen_text = document.text
                         break
-    
-                # Fallback if all top_k documents were ground-truth positives
-                if chosen_text is None:
-                    for document in all_docs:
-                        if document._id not in positive_ids:
-                            chosen_text = document.text
-                            break
-    
-                hard_negatives.append(chosen_text)
-    
-            return hard_negatives
+
+            hard_negatives.append(chosen_text)
+
+        return hard_negatives
