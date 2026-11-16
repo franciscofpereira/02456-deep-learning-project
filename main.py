@@ -97,6 +97,12 @@ def main(cfg):
             and os.path.exists(cfg.model.document_encoder_weights_path)
         ):
 
+            bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
+            hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=cfg.top_k)
+
+            # add hard negatives to corpus dataset
+            corpus.train = corpus.train.add_column("hard_negative", hard_negatives_texts)
+
             trainer = Trainer(device)
 
             trainer.train(

@@ -99,8 +99,31 @@ class Trainer:
                         document_tokenized["input_ids"], document_tokenized["attention_mask"]
                     )
 
+                # If hard negatives are provided, compute their embeddings
+                if "hard_negative" in batch:
+                    
+                    neg_tokenized = tokenizer(
+                        batch["hard_negative"],
+                        padding=True,
+                        truncation=True,
+                        max_length=max_seq_length,
+                        return_tensors="pt",
+                    ).to(self.device)
+
+                    hard_neg_embeddings = document_encoder(
+                        neg_tokenized["input_ids"], neg_tokenized["attention_mask"]
+                    )
+
+                    all_doc_embeddings = torch.cat(
+                        [positive_document_embeddings, hard_neg_embeddings], dim=0
+                    )
+
+                else:
+                    
+                    all_doc_embeddings = positive_document_embeddings
+
                 # Compute loss, propagate gradients, and update model parameters
-                loss = self.criterion(query_embeddings, positive_document_embeddings)
+                loss = self.criterion(query_embeddings, all_doc_embeddings)
                 scaler.scale(loss).backward()
                 scaler.unscale_(optimizer)
                 torch.nn.utils.clip_grad_norm_(params, max_norm=1.0)

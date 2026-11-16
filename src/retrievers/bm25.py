@@ -79,7 +79,7 @@ class BM25(TFIDF):
 
     def mine_hard_negatives(self, queries: list[Query], top_k: int = 20) -> list[str]:
             """
-            For each Query object, find the highest-scoring TF-IDF document
+            For each Query object, find the highest-scoring BM-25 document
             that is NOT in query.relevant_document_ids.
             """
     
