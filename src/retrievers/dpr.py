@@ -1,7 +1,7 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
 from src.retrievers.models.encoder import TransformerEncoder
-from transformers import AutoTokenizer, AutoModel
+from transformers import AutoTokenizer
 import torch
 import torch.nn as nn
 import os
@@ -13,7 +13,8 @@ class DPR(Retriever):
         super(DPR, self).__init__(documents, index_path) 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.cfg = cfg
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased", local_files_only=True)
+        tokenizer_name = getattr(self.cfg.model, "pretrained_model_name", None) or "bert-base-uncased"
+        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name, local_files_only=True)
         self.__load_models()
 
         self.doc_embeddings = None
@@ -36,7 +37,7 @@ class DPR(Retriever):
             )
 
         self.document_encoder = self.query_encoder
-        
+
         """ self.document_encoder = TransformerEncoder(
             self.cfg.model.n_layers,
             self.cfg.model.n_heads,
