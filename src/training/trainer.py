@@ -24,7 +24,8 @@ class Trainer:
             learning_rate: float = 1e-4,
             max_seq_length: int = 256,
             query_encoder_weights_path: str = "retrieval_data/query_encoder_weights.pt",
-            document_encoder_weights_path: str = "retrieval_data/document_encoder_weights.pt",       
+            document_encoder_weights_path: str = "retrieval_data/document_encoder_weights.pt",  
+            hard_negatives: list[str] = None     
     ):
 
         params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
@@ -100,7 +101,9 @@ class Trainer:
                     )
 
                 # If hard negatives are provided, compute their embeddings
-                if "hard_negative" in batch:
+                if "hard_negatives" is not None:
+
+                    train_dataset = train_dataset.add_column("hard_negative", hard_negatives)
                     
                     neg_tokenized = tokenizer(
                         batch["hard_negative"],
