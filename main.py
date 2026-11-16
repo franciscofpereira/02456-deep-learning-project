@@ -42,7 +42,15 @@ def main(cfg):
     train_queries = make_queries(corpus.train)
     val_queries = make_queries(corpus.val)
     test_queries = make_queries(corpus.test)
+
+    lengths = [
+    len((" ".join(doc["text"]) if isinstance(doc["text"], list) else doc["text"]).split())
+    for doc in documents
+    ]
     
+    print(f"Average document length (words): {np.mean(lengths):.1f}")
+    print(f"95th percentile (words): {np.percentile(lengths, 95):.1f}, Max: {np.max(lengths)}")
+    print(f"Median document length (words): {np.median(lengths):.1f}, Min: {np.min(lengths)}")
     ### Initialize TF-IDF class
 
     if cfg.retriever.method == "tf_idf":
