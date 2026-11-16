@@ -4,9 +4,8 @@ epochs: 5
 max_seq_length: 256
 top_k: 10
 
-model:
-  pretrained_model_name: distilbert-base-uncased
-  pooling_type: mean
-  emb_dim: 768           # Use native 768 (no random projection head to learn from scratch)
-  query_encoder_weights_path: retrieval_data/pretrained_query_encoder_weights.pt
-  document_encoder_weights_path: retrieval_data/pretrained_document_encoder_weights.pt
+pretrained_model_name: distilbert-base-uncased
+pooling_type: mean
+emb_dim: 768           # Use native 768 (no random projection head to learn from scratch)
+query_encoder_weights_path: retrieval_data/pretrained_query_encoder_weights.pt
+document_encoder_weights_path: retrieval_data/pretrained_document_encoder_weights.pt
