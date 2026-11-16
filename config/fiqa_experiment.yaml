@@ -5,8 +5,8 @@ defaults:
   - model: encoder
 
 document_embeddings_path: "retrieval_data/document_embeddings.pt"
-batch_size: 32
-learning_rate: 1e-4
+batch_size: 128
+learning_rate: 3e-4
 epochs: 10
 max_seq_length: 256
 device: cpu

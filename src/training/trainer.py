@@ -1,4 +1,5 @@
 import os
+from sched import scheduler
 import torch
 from src.training.loss import DPRLoss
 from src.data_utils.corpus import Corpus
@@ -7,9 +8,10 @@ from tqdm import tqdm
 import random
 
 class Trainer:
-    def __init__(self, device: torch.device):
-        self.criterion = DPRLoss()
+    def __init__(self, device: torch.device, cfg=None, temperature = 0.05):
+        self.criterion = DPRLoss(temperature=temperature)
         self.device = device
+        self.cfg = cfg
         
     def train(
             self,
@@ -27,6 +29,21 @@ class Trainer:
 
         params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
         optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.01)
+
+        if hasattr(corpus, "ds") and "train" in corpus.ds:
+            train_len = len(corpus.ds["train"])
+            total_batches = (train_len + batch_size - 1) // batch_size
+        else:
+            total_batches = sum(1 for _ in corpus.get_batch(batch_size, split="train", shuffle=False))
+
+        total_steps = total_batches * epochs
+        
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(
+            optimizer,
+            max_lr=learning_rate,
+            total_steps=total_steps,
+            pct_start=0.1,
+        )
 
         query_encoder.to(self.device).train()
         document_encoder.to(self.device).train()
@@ -84,6 +101,7 @@ class Trainer:
                 loss = self.criterion(query_embeddings, positive_document_embeddings)
                 loss.backward()
                 optimizer.step()
+                scheduler.step()
 
                 b_len = query_embeddings.size(0)
                 total_loss += loss.item() * b_len
@@ -97,6 +115,7 @@ class Trainer:
         query_encoder.eval()
         document_encoder.eval()  
         
+    
         os.makedirs(os.path.dirname(query_encoder_weights_path), exist_ok=True)
         os.makedirs(os.path.dirname(document_encoder_weights_path), exist_ok=True)
         torch.save(query_encoder.state_dict(), query_encoder_weights_path)
