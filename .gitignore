@@ -1,20 +1,17 @@
-# Dataset (downloaded automatically from Hugging Face)
-retrieval_data/
-
-# Experiment outputs / results / metrics / plots
-outputs/
-
-# Virtual environment
-venv/
-.venv/
-env/
-
-# Python build / cache artifacts
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 build/
 dist/
-*.egg-info/
+
+# Hydra run outputs / results / metrics / plots
+outputs/
+multirun/
+.hydra/
+
+# Datasets (rebuilt by the code)
+retrieval_data/
 
 # Model checkpoints / large binaries
 *.pt
@@ -23,15 +20,15 @@ dist/
 *.bin
 *.safetensors
 
-# Hydra logs
-multirun/
-.hydra/
-
-# Editor / OS
+# Environments / editors
+.venv/
+venv/
+env/
+.env
 .vscode/
 .idea/
+.ipynb_checkpoints/
+
+# OS
 .DS_Store
 Thumbs.db
-
-# Jupyter
-.ipynb_checkpoints/

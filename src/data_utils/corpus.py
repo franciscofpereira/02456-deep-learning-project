@@ -2,6 +2,7 @@ import os
 import shutil
 from datasets import Dataset, DatasetDict, load_from_disk
 from src.data_utils.download_retrieval_datasets import get_fiqa_dataset, get_squad_dataset
+import json
 
 class Corpus:
     def __init__(self, dataset_name: str, base_dir: str):
@@ -15,10 +16,14 @@ class Corpus:
             self.relevant_ids = self.__assign_ids()
             os.makedirs(f'{base_dir}/{self.dataset_name}', exist_ok=True)
             DatasetDict(self.ds).save_to_disk(f'{base_dir}/{self.dataset_name}')
+            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json', 'w') as f:  # add
+                json.dump(self.relevant_ids, f)  
             print(f'Saved {self.dataset_name} dataset to path {base_dir}/{self.dataset_name}.')
             shutil.rmtree(f'{base_dir}/raw')
         else:
             self.ds = load_from_disk(f'{base_dir}/{self.dataset_name}')
+            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json') as f:  # add
+                self.relevant_ids = json.load(f)
 
 
     @property
@@ -95,4 +100,25 @@ class Corpus:
             self.ds[key] = self.ds[key].add_column('document_id', document_ids)
 
         return relevant_document_ids
-            
+
+
+    def get_batch(self, batch_size: int, split: str = 'train', shuffle: bool = True):
+        '''
+        Get a batch of data from the specified split.
+        '''
+        assert split in ['train', 'val', 'test'], f'Split {split} not supported. Options are ["train", "val", "test"]'
+        dataset = self.ds[split]
+        if shuffle:
+            dataset = dataset.shuffle()
+        
+        for i in range(0, len(dataset), batch_size):
+            yield dataset[i:i + batch_size]
+
+    def get_length(self, split: str = 'train'):
+        '''
+        Get the length of the specified split.
+        '''
+        assert split in ['train', 'val', 'test'], f'Split {split} not supported. Options are ["train", "val", "test"]'
+        return len(self.ds[split])
+
+        
