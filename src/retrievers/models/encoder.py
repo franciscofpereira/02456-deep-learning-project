@@ -75,7 +75,7 @@ class EncoderLayer(nn.Module):
         return x
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, n_layers: int, n_heads: int, emb_dim: int, hidden_dim: int, feed_forward_dim: int, pooling_type: str = "cls"):
+    def __init__(self, n_layers, n_heads, emb_dim, hidden_dim, feed_forward_dim, pooling_type, vocab_size, max_seq_length, token_embedding=None):
         self.n_layers = n_layers
         self.n_heads = n_heads
         self.emb_dim =    emb_dim
@@ -83,18 +83,20 @@ class TransformerEncoder(nn.Module):
         self.feed_forward_dim = feed_forward_dim
         self.pooling_type = pooling_type
         self.setup_model()
+        self.max_seq_length = max_seq_length
+        self.token_embedding = (token_embedding if token_embedding is not None
+                                else nn.Embedding(vocab_size, emb_dim))
 
     def setup_model(self):
         """
         Instantiate the model.
         """
-        self.pos_enc = PositionalEncoding(self.emb_dim)
+        self.pos_enc = PositionalEncoding(self.emb_dim, max_len=self.max_seq_length)
         # Module list (not using a normal list) for PyTorch to register the parameters
         self.model = nn.ModuleList([
             EncoderLayer(self.emb_dim, self.hidden_dim, self.n_heads, self.feed_forward_dim) 
             for _ in range(self.n_layers)
         ])
-        raise NotImplementedError()
 
     def pool(self, x, mask):
         """
@@ -111,16 +113,11 @@ class TransformerEncoder(nn.Module):
             m = mask.unsqueeze(-1).to(x.dtype)
             return (x * m).sum(dim=1) / m.sum(dim=1) # mean of non-padding tokens
 
-    def forward(self, x: torch.tensor, mask: torch.tensor = None) -> torch.tensor:
-        """
-        Run a forward pass on the model
-        x : (B, T, emb_dim)
-        mask : (B, T) where 1 = real token, 0 = padding
-        """
-        B, T, _ = x.shape
-        if mask is None:
-            mask = torch.ones(B, T, device=x.device)
+    def forward(self, input_ids, attention_mask=None):
+        if attention_mask is None:
+            attention_mask = torch.ones_like(input_ids)
+        x = self.token_embedding(input_ids)      # token embedding (ids instead of vectors)
         x = self.pos_enc(x)
         for layer in self.model:
-            x = layer(x, mask)
-        return self.pool(x, mask)
+            x = layer(x, attention_mask)
+        return self.pool(x, attention_mask)
