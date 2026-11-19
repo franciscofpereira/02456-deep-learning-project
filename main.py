@@ -68,39 +68,42 @@ def main(cfg):
         os.path.exists(cfg.model.query_encoder_weights_path)
         and os.path.exists(cfg.model.document_encoder_weights_path)
     ):
-
         bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
-        hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5)
+        hard_negatives_texts = bm25_retriever.mine_hard_negatives(
+            train_queries, top_k=30, skip_top=5
+        )
 
         trainer = Trainer(device)
-
         trainer.train(
-                    query_encoder=dpr.query_encoder, 
-                    document_encoder=dpr.document_encoder,
-                    corpus=corpus, 
-                    hard_negatives=hard_negatives_texts,
-                    epochs=cfg.epochs, 
-                    batch_size=cfg.batch_size, 
-                    learning_rate=cfg.learning_rate, 
-                    max_seq_length=cfg.max_seq_length, 
-                    query_encoder_weights_path=cfg.model.query_encoder_weights_path, 
-                    document_encoder_weights_path=cfg.model.document_encoder_weights_path,
-                    tokenizer=dpr.tokenizer
-                )
+            query_encoder=dpr.query_encoder,
+            document_encoder=dpr.document_encoder,
+            corpus=corpus,
+            hard_negatives=hard_negatives_texts,
+            epochs=cfg.epochs,
+            batch_size=cfg.batch_size,
+            learning_rate=cfg.learning_rate,
+            max_seq_length=cfg.max_seq_length,
+            query_encoder_weights_path=cfg.model.query_encoder_weights_path,
+            document_encoder_weights_path=cfg.model.document_encoder_weights_path,
+            tokenizer=dpr.tokenizer,
+        )
 
-        document_embeddings = dpr.BuildDocumentEmbeddings(batch_size=cfg.batch_size, save_path=cfg.document_embeddings_path)
+    # Always run indexing + evaluation (unindented!)
+    document_embeddings = dpr.BuildDocumentEmbeddings(
+        batch_size=cfg.batch_size, save_path=cfg.document_embeddings_path
+    )
 
-        dpr_train_relevancies = retrieveQueryAndGetRelevancies(dpr, train_queries, k=cfg.top_k)
-        dpr_val_relevancies = retrieveQueryAndGetRelevancies(dpr, val_queries, k=cfg.top_k)
-        dpr_test_relevancies = retrieveQueryAndGetRelevancies(dpr, test_queries, k=cfg.top_k)
+    dpr_train_relevancies = retrieveQueryAndGetRelevancies(dpr, train_queries, k=cfg.top_k)
+    dpr_val_relevancies = retrieveQueryAndGetRelevancies(dpr, val_queries, k=cfg.top_k)
+    dpr_test_relevancies = retrieveQueryAndGetRelevancies(dpr, test_queries, k=cfg.top_k)
 
-        train_scores = Evaluate(dpr_train_relevancies, train_queries)
-        val_scores = Evaluate(dpr_val_relevancies, val_queries)
-        test_scores = Evaluate(dpr_test_relevancies, test_queries)
+    train_scores = Evaluate(dpr_train_relevancies, train_queries)
+    val_scores = Evaluate(dpr_val_relevancies, val_queries)
+    test_scores = Evaluate(dpr_test_relevancies, test_queries)
 
-        print(f"DPR Train results: {train_scores}")
-        print(f"DPR Val results: {val_scores}")
-        print(f"DPR Test results: {test_scores}")
+    print(f"DPR Train results: {train_scores}")
+    print(f"DPR Val results: {val_scores}")
+    print(f"DPR Test results: {test_scores}")
     
 if __name__ == '__main__':
     main()
