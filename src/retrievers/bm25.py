@@ -81,8 +81,12 @@ class BM25(TFIDF):
         self, queries: list[Query], top_k: int = 30, skip_top: int = 5
     ) -> list[str]:
         query_texts = [q.text for q in queries]
-        scores = self.CalculateScores(query_texts)
-        top_k_indices = np.argsort(scores, axis=1)[:, -top_k:][:, ::-1]
+        # Score in chunks so the full (n_queries x n_documents) matrix is never in memory (needed for SQuAD)
+        chunk_size = 4096
+        top_k_indices = np.concatenate([
+            np.argsort(self.CalculateScores(query_texts[s:s + chunk_size]), axis=1)[:, -top_k:][:, ::-1]
+            for s in range(0, len(query_texts), chunk_size)
+        ], axis=0)
 
         all_docs = self.index.GetDocuments()
         hard_negatives = []

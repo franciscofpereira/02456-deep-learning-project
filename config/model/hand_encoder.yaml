@@ -1,0 +1,10 @@
+encoder_type: hand       # use HandTransformerEncoder (hand-made attention / layers)
+pooling_type: 'mean'     # mean | cls | max
+emb_dim: 128             # must be even (sinusoidal positional encoding)
+hidden_dim: 128          # Q/K/V size, must be divisible by n_heads -> 32 per head
+n_heads: 4
+n_layers: 3
+feed_forward_dim: 256
+# Separate files so they never mix with the TransformerEncoder / pretrained weights
+query_encoder_weights_path: "retrieval_data/hand_query_encoder_weights.pt"
+document_encoder_weights_path: "retrieval_data/hand_document_encoder_weights.pt"

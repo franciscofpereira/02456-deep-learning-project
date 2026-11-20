@@ -1,6 +1,6 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
-from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder
+from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder, HandTransformerEncoder
 from transformers import AutoTokenizer
 import torch
 import torch.nn as nn
@@ -35,8 +35,12 @@ class DPR(Retriever):
             )
 
         else:
+            # encoder_type: "hand" -> HandTransformerEncoder, anything else -> TransformerEncoder (default)
+            encoder_type = self.cfg.model.get("encoder_type", "transformer")
+            encoder_class = HandTransformerEncoder if encoder_type == "hand" else TransformerEncoder
+
             # Encode queries and documents and store them and move them to device
-            self.query_encoder = TransformerEncoder(
+            self.query_encoder = encoder_class(
                 self.cfg.model.n_layers,
                 self.cfg.model.n_heads,
                 self.cfg.model.emb_dim,

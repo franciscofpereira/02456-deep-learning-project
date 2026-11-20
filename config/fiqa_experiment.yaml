@@ -12,6 +12,9 @@ max_seq_length: 256
 device: cpu
 base_path: "."
 top_k: 10
+eval_ks: [1, 5, 10]                # Precision@k, Recall@k, MRR@k, nDCG@k are reported for each k
+results_dir: "outputs/results/${dataset.name}"  # one <run_name>.json per method and dataset, compared with: python -m src.evaluation.metrics
+run_name: null                     # null -> method name, e.g. "bm25" or "dpr_hand_encoder"
 
 # Keep Hydra in the current directory to ensure relative paths are correct
 hydra:

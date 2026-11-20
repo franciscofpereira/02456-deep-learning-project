@@ -42,15 +42,20 @@ class Retriever(ABC):
     def CalculateScores(self, query: str):
         raise NotImplementedError("Must overwrite")
     
-    def Lookup(self, queries: list[str], k: int) -> list:
+    def Lookup(self, queries: list[str], k: int, chunk_size: int = 4096) -> list:
         """
         @param queries: The input text(s) to which relevant passages should be found.
         @param k: The number of relevant passages to retrieve for each input query.
+        @param chunk_size: Queries are scored in chunks, so the (n_queries x n_documents) score
+                           matrix never has to fit in memory at once (needed for SQuAD). Same results.
         """
-        scores = self.CalculateScores(queries)
         documents = self.index.GetDocuments()
         k = min(k, len(documents))
-        top_k = np.argpartition(-scores, k - 1, axis=1)[:, :k]
-        order = np.argsort(-np.take_along_axis(scores, top_k, axis=1), axis=1, kind='stable')
-        top_k = np.take_along_axis(top_k, order, axis=1)
-        return [[documents[j] for j in row] for row in top_k]
+        results = []
+        for start in range(0, len(queries), chunk_size):
+            scores = self.CalculateScores(queries[start:start + chunk_size])
+            top_k = np.argpartition(-scores, k - 1, axis=1)[:, :k]
+            order = np.argsort(-np.take_along_axis(scores, top_k, axis=1), axis=1, kind='stable')
+            top_k = np.take_along_axis(top_k, order, axis=1)
+            results.extend([documents[j] for j in row] for row in top_k)
+        return results
