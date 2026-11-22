@@ -109,7 +109,7 @@ class Trainer:
                 # If hard negatives are provided, compute their embeddings
                 train_data = corpus.train
                 
-                if "hard_negative" not in batch:
+                if "hard_negative" in batch:
 
                     neg_tokenized = tokenizer(
                         batch["hard_negative"],

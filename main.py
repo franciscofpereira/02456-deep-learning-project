@@ -29,7 +29,7 @@ def main(cfg):
     print(f"Config: \n {OmegaConf.to_yaml(cfg)}")
 
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device(cfg.device)
-
+    print(f"Device: {device}")
     # Load a dataset
     corpus = Corpus(dataset_name=cfg.dataset.name, base_dir=f'{cfg.base_path}/retrieval_data')
 
@@ -47,11 +47,14 @@ def main(cfg):
     len((" ".join(doc["text"]) if isinstance(doc["text"], list) else doc["text"]).split())
     for doc in documents
     ]
-    
+
+    print(f"Number of documents: {len(corpus.all_documents)}")
     print(f"Average document length (words): {np.mean(lengths):.1f}")
     print(f"95th percentile (words): {np.percentile(lengths, 95):.1f}, Max: {np.max(lengths)}")
     print(f"Median document length (words): {np.median(lengths):.1f}, Min: {np.min(lengths)}")
     ### Initialize TF-IDF class
+
+    print(f"retriever method: {cfg.retriever.method}")
 
     if cfg.retriever.method == "tf_idf":
         
@@ -105,9 +108,9 @@ def main(cfg):
             and os.path.exists(cfg.model.document_encoder_weights_path)
         ):
 
-            bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
-            hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5)
-
+           #bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
+           #hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5) 
+            hard_negatives_texts = None
             trainer = Trainer(device)
 
             trainer.train(

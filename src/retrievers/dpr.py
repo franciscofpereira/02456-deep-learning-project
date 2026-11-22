@@ -116,7 +116,7 @@ class DPR(Retriever):
                 with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
                     batch_embeddings = self.document_encoder(input_ids, attention_mask)
 
-                all_embeddings.append(batch_embeddings.cpu())
+                all_embeddings.append(batch_embeddings.float().cpu())
 
         # 4. Combine all batches -> (len(texts), emb_dim)
         return torch.cat(all_embeddings, dim=0)
@@ -184,7 +184,7 @@ class DPR(Retriever):
         encoded_queries = self.EncodeQuery(queries, batch_size=self.cfg.batch_size)
         print(f'Encoded queries shape: {encoded_queries.shape}')
         print(f'Document embeddings shape: {self.doc_embeddings.shape}')
-        scores = encoded_queries @ self.doc_embeddings.T
+        scores = encoded_queries.float() @ self.doc_embeddings.float().T
         
         return scores.cpu().numpy()
 

@@ -76,10 +76,15 @@ class TransformerEncoder(nn.Module):
         self.max_seq_length = max_seq_length
 
         self.token_embedding = (
-            token_embedding if token_embedding is not None else nn.Embedding(self.vocab_size, emb_dim)
+            token_embedding if token_embedding is not None else nn.Embedding(self.vocab_size, hidden_dim)
         )
         self.pos_embedding = (
-            pos_embedding if pos_embedding is not None else nn.Embedding(max_seq_length, emb_dim)
+            pos_embedding if pos_embedding is not None else nn.Embedding(max_seq_length, hidden_dim)
+        )
+    
+        self.proj = (
+            nn.Linear(hidden_dim, emb_dim) if emb_dim is not None and emb_dim != hidden_dim
+            else nn.Identity()
         )
 
         self.model = self.setup_model()
@@ -91,10 +96,10 @@ class TransformerEncoder(nn.Module):
         
         model = nn.TransformerEncoder(
             nn.TransformerEncoderLayer(
-                d_model=self.emb_dim,
+                d_model=self.hidden_dim,
                 nhead=self.n_heads,
                 dim_feedforward=self.feed_forward_dim,
-                dropout=0.2,
+                dropout=0.1,
                 activation='gelu',
                 batch_first=True,
                 norm_first=True,
@@ -136,5 +141,7 @@ class TransformerEncoder(nn.Module):
         
         # Pool the output to get a single vector representation for each input sequence
         x = self.pool(x, attention_mask)
+
+        x = self.proj(x)
 
         return x
