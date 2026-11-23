@@ -6,6 +6,7 @@ from transformers import AutoTokenizer
 import torch
 import torch.nn as nn
 import os
+import torch.nn.functional as F
 
 
 class DPR(Retriever):
@@ -177,24 +178,22 @@ class DPR(Retriever):
 
 
     def CalculateScores(self, queries: list[str]):
-        #code foundation copied from tf_idf.py, needs to be modified for DPR
-        """Calculate scores for a query
         
-        Args:
-            queries (list[str]): The queries to calculate scores for
-        
-        Returns:
-            sim(q, d) = E_Q(q) (encoded queries) · E_D(d) (encoded documents)
-            Score for relevance 
+        '''
+        Given a list of queries, calculate the similarity scores between the queries and the documents in the index.
 
-            Ref: https://www.geeksforgeeks.org/nlp/dense-passage-retrieval-dpr/
+        Args:
+            queries: A list of query strings.
+
+        Returns:
+            A numpy array of shape (len(queries), len(documents)) containing the similarity scores.
+        '''
         
-        """
         encoded_queries = self.EncodeQuery(queries, batch_size=self.cfg.batch_size)
-        print(f'Encoded queries shape: {encoded_queries.shape}')
-        print(f'Document embeddings shape: {self.doc_embeddings.shape}')
-        scores = encoded_queries.float() @ self.doc_embeddings.float().T
-        
+        encoded_queries = F.normalize(encoded_queries.float(), p=2, dim=-1)
+        doc_embeddings = F.normalize(self.doc_embeddings.float(), p=2, dim=-1)
+        scores = encoded_queries @ doc_embeddings.T
+    
         return scores.cpu().numpy()
 
     
