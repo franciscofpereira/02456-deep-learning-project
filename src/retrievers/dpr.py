@@ -1,6 +1,7 @@
 from src.data_utils.document import Document
 from src.retrievers.base_retriever import Retriever
-from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder
+from src.retrievers.models.encoder import TransformerEncoder 
+from src.retrievers.models.pre_trained_encoder import PretrainedEncoder
 from transformers import AutoTokenizer
 import torch
 import torch.nn as nn

@@ -3,7 +3,8 @@ from sched import scheduler
 import torch
 from src.training.loss import DPRLoss
 from src.data_utils.corpus import Corpus
-from src.retrievers.models.encoder import TransformerEncoder, PretrainedEncoder
+from src.retrievers.models.encoder import TransformerEncoder
+from src.retrievers.models.pre_trained_encoder import PretrainedEncoder
 from tqdm import tqdm
 import random
 
