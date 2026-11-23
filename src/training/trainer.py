@@ -28,7 +28,9 @@ class Trainer:
             hard_negatives: list[str] | None = None     
     ):
 
-        params = list( dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())) )
+        params = list(dict.fromkeys(
+            list(self.query_encoder.parameters()) + list(self.document_encoder.parameters())
+        ))  
         optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.1)
 
         if hasattr(corpus, "ds") and "train" in corpus.ds:

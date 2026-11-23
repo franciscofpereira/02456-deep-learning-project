@@ -8,6 +8,7 @@ import os
 
 
 class DPR(Retriever):
+    
     def __init__(self, cfg, documents: list[dict] = None, index_path: str = None) -> None:
         #Modified from tf_idf.py: allows for use of Retriever functions so they don't need to be rewritten here
         super(DPR, self).__init__(documents, index_path) 
@@ -34,8 +35,17 @@ class DPR(Retriever):
                 max_seq_length=self.cfg.max_seq_length
             )
 
+            self.document_encoder = PretrainedEncoder(
+                model_name=pretrained_name,
+                pooling_type=self.cfg.model.pooling_type,
+                emb_dim=self.cfg.model.emb_dim,
+                max_seq_length=self.cfg.max_seq_length,
+            )
+
         else:
-            # Encode queries and documents and store them and move them to device
+            
+            shared_token_emb = nn.Embedding(self.tokenizer.vocab_size, self.cfg.model.emb_dim)
+
             self.query_encoder = TransformerEncoder(
                 self.cfg.model.n_layers,
                 self.cfg.model.n_heads,
@@ -44,23 +54,21 @@ class DPR(Retriever):
                 self.cfg.model.feed_forward_dim, 
                 self.cfg.model.pooling_type, 
                 self.tokenizer.vocab_size, 
-                self.cfg.max_seq_length
+                self.cfg.max_seq_length,
+                token_embedding=shared_token_emb
                 )
 
-        self.document_encoder = self.query_encoder
-
-        """ self.document_encoder = TransformerEncoder(
-            self.cfg.model.n_layers,
-            self.cfg.model.n_heads,
-            self.cfg.model.emb_dim,
-            self.cfg.model.hidden_dim,
-            self.cfg.model.feed_forward_dim,
-            self.cfg.model.pooling_type,
-            self.tokenizer.vocab_size,
-            self.cfg.max_seq_length
-            token_embedding=self.query_encoder.token_embedding,
-            pos_embedding=self.query_encoder.pos_embedding
-            ) """
+            self.document_encoder = TransformerEncoder(
+                self.cfg.model.n_layers,
+                self.cfg.model.n_heads,
+                self.cfg.model.emb_dim,
+                self.cfg.model.hidden_dim,
+                self.cfg.model.feed_forward_dim,
+                self.cfg.model.pooling_type,
+                self.tokenizer.vocab_size,
+                self.cfg.max_seq_length,
+                token_embedding=shared_token_emb,
+                )
 
         self.query_encoder.eval()
         self.document_encoder.eval()
