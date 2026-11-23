@@ -30,7 +30,7 @@ class Trainer:
     ):
 
         params = list(dict.fromkeys(
-            list(self.query_encoder.parameters()) + list(self.document_encoder.parameters())
+            list(query_encoder.parameters()) + list(document_encoder.parameters())
         ))  
         optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.1)
 
