@@ -111,7 +111,7 @@ def main(cfg):
            #bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
            #hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5) 
             hard_negatives_texts = None
-            trainer = Trainer(device)
+            trainer = Trainer(device, temperature=cfg.temperature)
 
             trainer.train(
                         query_encoder=dpr.query_encoder, 

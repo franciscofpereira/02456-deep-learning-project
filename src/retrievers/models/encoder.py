@@ -26,7 +26,7 @@ class PositionalEncoding(nn.Module):
 
 class MultiHeadSelfAttention(nn.Module):
     
-    def __init__(self, emb_dim: int, hidden_dim: int, n_heads: int, dropout: float = 0.1) -> None:
+    def __init__(self, emb_dim: int, hidden_dim: int, n_heads: int, dropout: float = 0.2) -> None:
         super().__init__()
         if hidden_dim % n_heads != 0:
             raise ValueError(f"hidden_dim ({hidden_dim}) must be divisible by n_heads ({n_heads})")
