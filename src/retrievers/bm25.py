@@ -49,7 +49,6 @@ class BM25(TFIDF):
             n_terms = len(self.corpus_vocabulary)
             rows, cols, vals = [], [], []
     
-            # raw term frequency × inverse document frequency
             for doc_idx, tokens in enumerate(self.doc_tokens):
                 for term, count in Counter(tokens).items():
                     rows.append(doc_idx)
@@ -58,9 +57,7 @@ class BM25(TFIDF):
                     vals.append(((count * (self.k1 + 1))/(count+self.k1*(1-self.b+self.b*(self.doc_lengths[doc_idx]/self.avg_doc_length)))) * self.idf_bm25[term])
     
             bm25_matrix = csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
-            norms = np.sqrt(bm25_matrix.multiply(bm25_matrix).sum(axis=1)).A1
-            norms[norms == 0] = 1  # avoid dividing by zero for empty documents
-            return (diags(1 / norms) @ bm25_matrix).tocsr()  # divides documents by their own length, normalizing bm25 vectors
+            return bm25_matrix.tocsr()  # returns the BM25 matrix without normalization
            
     
     def CalculateScores(self, queries: list[str]):
