@@ -122,9 +122,10 @@ class Trainer:
                         return_tensors="pt",
                     ).to(self.device)
 
-                    hard_neg_embeddings = document_encoder(
-                        neg_tokenized["input_ids"], neg_tokenized["attention_mask"]
-                    )
+                    with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
+                        hard_neg_embeddings = document_encoder(
+                          neg_tokenized["input_ids"], neg_tokenized["attention_mask"]
+                        )
 
                     all_doc_embeddings = torch.cat(
                         [positive_document_embeddings, hard_neg_embeddings], dim=0

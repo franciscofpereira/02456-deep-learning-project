@@ -1,15 +1,18 @@
 defaults:
   - _self_  # Hydra magic
-  - dataset: fiqa
-  - retriever: dpr
+  - dataset: squad
+  - retriever: tf_idf
   - model: encoder
 
 document_embeddings_path: "retrieval_data/${dataset.name}/dpr/document_embeddings.pt"
-batch_size: 32
-learning_rate: 3e-4
-epochs: 8
+batch_size: 128
+learning_rate: 2e-4
+epochs: 40
 max_seq_length: 256
-device: cpu
+temperature: 0.05
+mine_hard_negatives: false
+hard_negative_skip_top: 1
+device: cuda
 base_path: "."
 top_k: 10
 

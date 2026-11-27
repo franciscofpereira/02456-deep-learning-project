@@ -1,0 +1,22 @@
+defaults:
+  - _self_  # Hydra magic
+  - dataset: squad
+  - retriever: dpr
+  - model: pre_trained_model
+
+document_embeddings_path: "retrieval_data/${dataset.name}/dpr_pretrained/document_embeddings.pt"
+batch_size: 128
+learning_rate: 3e-5
+epochs: 4
+max_seq_length: 256
+temperature: 0.05
+mine_hard_negatives: false
+hard_negative_skip_top: 1
+device: cuda
+base_path: "."
+top_k: 10
+
+# Keep Hydra in the current directory to ensure relative paths are correct
+hydra:
+  run:
+    dir: "outputs/${retriever.method}/"  # Separate directory for evaluation outputs

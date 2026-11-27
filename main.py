@@ -23,7 +23,7 @@ warnings.filterwarnings(
     category=UserWarning,
 )   
 
-@hydra.main(config_path='config', config_name='fiqa_experiment.yaml', version_base=None)
+@hydra.main(config_path='config', config_name='pre_trained_squad.yaml', version_base=None)
 def main(cfg):
 
     print(f"Config: \n {OmegaConf.to_yaml(cfg)}")
@@ -107,10 +107,16 @@ def main(cfg):
             os.path.exists(cfg.model.query_encoder_weights_path)
             and os.path.exists(cfg.model.document_encoder_weights_path)
         ):
+ 
+            if cfg.mine_hard_negatives:
+                print("Mining BM25 hard negatives for training queries...")
+                bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
+                hard_negatives_texts = bm25_retriever.mine_hard_negatives(
+                    train_queries, top_k=30, skip_top=cfg.hard_negative_skip_top
+                )
+            else:
+                hard_negatives_texts = None
 
-           #bm25_retriever = BM25(documents=corpus.all_documents, index_path=None)
-           #hard_negatives_texts = bm25_retriever.mine_hard_negatives(train_queries, top_k=30, skip_top=5) 
-            hard_negatives_texts = None
             trainer = Trainer(device, temperature=cfg.temperature)
 
             trainer.train(
