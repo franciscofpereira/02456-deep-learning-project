@@ -4,7 +4,7 @@ import numpy as np
 import re
 import math
 from collections import Counter
-from scipy.sparse import csr_matrix, diags  
+from scipy.sparse import csr_matrix, diags
 
 
 class TFIDF(Retriever):
@@ -14,7 +14,6 @@ class TFIDF(Retriever):
         self.corpus_vocabulary = self.GetCorpusVocabulary()
         self.idf = self.GetInverseDocumentFrequencies()
 
-        # Only run if we are in TFIDF class
         if type(self) == TFIDF:
             self.tfidf_matrix = self.GetDocumentsTFIDFVectors()
 
@@ -24,11 +23,8 @@ class TFIDF(Retriever):
         """
         text = text.lower()
         text = re.sub(r"[^a-z0-9\s]", " ", text)  # replace non-alphanumerics with space
+        return text.split()
 
-        # potentially add stopword removal and stemming
-
-        return text.split()  
-        
     def GetQueryVocabulary(self, query: str) -> list[str]:
         """
         Returns all unique words in a query
@@ -53,7 +49,7 @@ class TFIDF(Retriever):
         """
         df = Counter()
         for tokens in self.doc_tokens:
-            df.update(set(tokens))  
+            df.update(set(tokens))
         return dict(df)
 
     def GetInverseDocumentFrequencies(self) -> dict[str, float]:
@@ -62,8 +58,7 @@ class TFIDF(Retriever):
         """
         n_documents = len(self.index.GetDocuments())
         return {term: math.log(n_documents / df) for term, df in self.GetDocumentFrequencies().items()}
-    
-    
+
     def GetDocumentTermCounts(self, document: Document):
         """
         Returns a dict on the form {term: num_occurences} for an input Document.
@@ -90,16 +85,18 @@ class TFIDF(Retriever):
         tfidf_matrix = csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
         norms = np.sqrt(tfidf_matrix.multiply(tfidf_matrix).sum(axis=1)).A1
         norms[norms == 0] = 1  # avoid dividing by zero for empty documents
-        return (diags(1 / norms) @ tfidf_matrix).tocsr()  # divides documents by their own length, normalizing tf-idf vectors
-       
+        return (
+            diags(1 / norms) @ tfidf_matrix
+        ).tocsr()  # divides documents by their own length, normalizing tf-idf vectors
+
     def QueryToVector(self, queries: list[str]):
-        """ Converts a query or batch of queries into a sparse vector matching the vocab size with counts of how many times the term occurs.
-                
-                Args:
-                    query (str): The query to convert
-                
-                Returns:
-                    csr_matrix: A sparse vector representation of the query
+        """Converts a query or batch of queries into a sparse vector matching the vocab size with counts of how many times the term occurs.
+
+        Args:
+            query (str): The query to convert
+
+        Returns:
+            csr_matrix: A sparse vector representation of the query
         """
         rows, cols, vals = [], [], []
         for i, query in enumerate(queries):
@@ -109,24 +106,23 @@ class TFIDF(Retriever):
                     rows.append(i)
                     cols.append(j)
                     vals.append(count)
-                    
+
         return csr_matrix((vals, (rows, cols)), shape=(len(queries), len(self.corpus_vocabulary)), dtype=np.float32)
 
-    #@time_func
+   
     def CalculateScores(self, queries: list[str]):
         """Calculate scores for a query
-        
+
         Args:
             query (str): The query to calculate scores for
-        
+
         Returns:
             np.array: An array of scores for each document
 
-            num_queries x num_documents where (i, j) = ∑_i TF-IDF(q_i, D_j; D) 
-        
+            num_queries x num_documents where (i, j) = ∑_i TF-IDF(q_i, D_j; D)
+
         """
         # Convert the queries to a vector
-        query_vectors = self.QueryToVector(queries) # n_queries x vocab size
-        scores = query_vectors.dot(self.tfidf_matrix.T).toarray() # n_queries x n_documents
+        query_vectors = self.QueryToVector(queries)  # n_queries x vocab size
+        scores = query_vectors.dot(self.tfidf_matrix.T).toarray()  # n_queries x n_documents
         return scores
-    

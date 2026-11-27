@@ -7,12 +7,12 @@ class Query:
         self.id = id
         self.relevant_document_ids = relevant_document_ids
         self.label = label
-        
+
     def getQuery(self):
         return self.text
-    
+
     def getNumberOfRelevantDocuments(self):
         return len(self.relevant_document_ids)
-    
+
     def isDocumentRelevant(self, document: Document):
         return document.GetId() in self.relevant_document_ids
