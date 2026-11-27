@@ -2,8 +2,9 @@ from src.retrievers.tf_idf import TFIDF
 import numpy as np
 import math
 from collections import Counter
-from scipy.sparse import csr_matrix, diags  
+from scipy.sparse import csr_matrix, diags
 from src.data_utils.query import Query
+
 
 class BM25(TFIDF):
     def __init__(self, documents: list[dict] = None, index_path: str = None, k1: float = 1.5, b: float = 0.75) -> None:
@@ -19,53 +20,53 @@ class BM25(TFIDF):
             self.bm25_matrix = self.GetDocumentsBM25Vectors()
 
     def GetDocumentLengths(self):
-        # document_lengths = {}
-        # average_document_length = 0
-        # for document in self.index.GetDocuments():
-        #     length = len(self.PreprocessText(document.GetText()))
-        #     document_lengths[document] = length
-        #     average_document_length += length
-        # return document_lengths, average_document_length/len(self.index.GetDocuments())
-
+        '''
+        Returns a tuple of document lengths and the average document length.
+        '''
         # Modified due to problem with index access, also for efficiency
         document_lengths = [len(tokens) for tokens in self.doc_tokens]
         average_document_length = sum(document_lengths) / len(document_lengths)
         return document_lengths, average_document_length
-    
+
     def GetInverseDocumentFrequenciesBM25(self) -> dict[str, float]:
-            """
-            Returns a dict with terms and their corresponding inverse document frequencies. (Modified for BM25)
-            """
-            n_documents = len(self.index.GetDocuments())
-            return {term: math.log((n_documents +1) / (df + 0.5)) for term, df in self.GetDocumentFrequencies().items()}
+        """
+        Returns a dict with terms and their corresponding inverse document frequencies. (Modified for BM25)
+        """
+        n_documents = len(self.index.GetDocuments())
+        return {term: math.log((n_documents + 1) / (df + 0.5)) for term, df in self.GetDocumentFrequencies().items()}
 
     def GetDocumentsBM25Vectors(self):
-            """
-            Returns a n_documents x n_terms matrix whose element (i, j) is the bm25 score of the j'th term in the i'th document.
-            """
-            self.term_to_index = {term: idx for idx, term in enumerate(self.corpus_vocabulary)}
-    
-            n_documents = len(self.doc_tokens)
-            n_terms = len(self.corpus_vocabulary)
-            rows, cols, vals = [], [], []
-    
-            for doc_idx, tokens in enumerate(self.doc_tokens):
-                for term, count in Counter(tokens).items():
-                    rows.append(doc_idx)
-                    cols.append(self.term_to_index[term])
-                    # Modified TF-IDF formula to BM25 formula
-                    vals.append(((count * (self.k1 + 1))/(count+self.k1*(1-self.b+self.b*(self.doc_lengths[doc_idx]/self.avg_doc_length)))) * self.idf_bm25[term])
-    
-            bm25_matrix = csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
-            return bm25_matrix.tocsr()  # returns the BM25 matrix without normalization
-           
-    
+        """
+        Returns a n_documents x n_terms matrix whose element (i, j) is the bm25 score of the j'th term in the i'th document.
+        """
+        self.term_to_index = {term: idx for idx, term in enumerate(self.corpus_vocabulary)}
+
+        n_documents = len(self.doc_tokens)
+        n_terms = len(self.corpus_vocabulary)
+        rows, cols, vals = [], [], []
+
+        for doc_idx, tokens in enumerate(self.doc_tokens):
+            for term, count in Counter(tokens).items():
+                rows.append(doc_idx)
+                cols.append(self.term_to_index[term])
+                # Modified TF-IDF formula to BM25 formula
+                vals.append(
+                    (
+                        (count * (self.k1 + 1))
+                        / (count + self.k1 * (1 - self.b + self.b * (self.doc_lengths[doc_idx] / self.avg_doc_length)))
+                    )
+                    * self.idf_bm25[term]
+                )
+
+        bm25_matrix = csr_matrix((vals, (rows, cols)), shape=(n_documents, n_terms), dtype=np.float32)
+        return bm25_matrix.tocsr()  # returns the BM25 matrix without normalization
+
     def CalculateScores(self, queries: list[str]):
         """Calculate scores for a query
-        
+
         Args:
             query (str): The query to calculate scores for
-        
+
         Returns:
             np.array: An array of scores for each document
         """
@@ -73,10 +74,19 @@ class BM25(TFIDF):
         scores = query_vector.dot(self.bm25_matrix.T).toarray()
         return scores
 
+    def mine_hard_negatives(self, queries: list[Query], top_k: int = 30, skip_top: int = 5) -> list[str]:
+        """
+        Given a list of queries, mine hard negatives using BM25.
 
-    def mine_hard_negatives(
-        self, queries: list[Query], top_k: int = 30, skip_top: int = 5
-    ) -> list[str]:
+        Args:
+            queries (list[Query]): A list of queries.
+            top_k (int): The number of top results to consider.
+            skip_top (int): The number of top results to skip.
+
+        Returns:
+            list[str]: A list of hard negative texts.
+        """
+        
         query_texts = [q.text for q in queries]
         scores = self.CalculateScores(query_texts)
         top_k_indices = np.argsort(scores, axis=1)[:, -top_k:][:, ::-1]

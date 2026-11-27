@@ -1,5 +1,6 @@
 from src.data_utils.document import Document
 
+
 class DocumentDataset:
     def __init__(self, documents: list[dict]) -> None:
         self.documents: list[Document] = self.__BuildDocuments(documents)
@@ -7,8 +8,8 @@ class DocumentDataset:
     def __BuildDocuments(self, documents):
         docs = []
         for entries in documents:
-            texts = entries['text']
-            ids = entries['document_id']
+            texts = entries["text"]
+            ids = entries["document_id"]
             if isinstance(texts, str):
                 docs.append(Document(text=texts, _id=ids))
             else:

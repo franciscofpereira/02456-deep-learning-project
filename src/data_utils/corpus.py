@@ -8,35 +8,35 @@ import json
 class Corpus:
     def __init__(self, dataset_name: str, base_dir: str):
         self.dataset_name = dataset_name
-        if not os.path.exists(f'{base_dir}/{self.dataset_name}'):
-            raw_data_dir = f'{base_dir}/raw'
+        if not os.path.exists(f"{base_dir}/{self.dataset_name}"):
+            raw_data_dir = f"{base_dir}/raw"
             os.makedirs(raw_data_dir, exist_ok=True)
             # load and process data
             self.ds = self.__load_data(base_dir=raw_data_dir)
             self.__rename_columns()
             self.relevant_ids = self.__assign_ids()
-            os.makedirs(f'{base_dir}/{self.dataset_name}', exist_ok=True)
-            DatasetDict(self.ds).save_to_disk(f'{base_dir}/{self.dataset_name}')
-            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json', 'w') as f:
+            os.makedirs(f"{base_dir}/{self.dataset_name}", exist_ok=True)
+            DatasetDict(self.ds).save_to_disk(f"{base_dir}/{self.dataset_name}")
+            with open(f"{base_dir}/{self.dataset_name}/relevant_ids.json", "w") as f:
                 json.dump(self.relevant_ids, f)
-            print(f'Saved {self.dataset_name} dataset to path {base_dir}/{self.dataset_name}.')
-            shutil.rmtree(f'{base_dir}/raw', ignore_errors=True)
+            print(f"Saved {self.dataset_name} dataset to path {base_dir}/{self.dataset_name}.")
+            shutil.rmtree(f"{base_dir}/raw", ignore_errors=True)
         else:
-            self.ds = load_from_disk(f'{base_dir}/{self.dataset_name}')
-            with open(f'{base_dir}/{self.dataset_name}/relevant_ids.json') as f:
+            self.ds = load_from_disk(f"{base_dir}/{self.dataset_name}")
+            with open(f"{base_dir}/{self.dataset_name}/relevant_ids.json") as f:
                 self.relevant_ids = json.load(f)
 
     @property
     def train(self):
-        return self.ds.get('train', None)
+        return self.ds.get("train", None)
 
     @property
     def val(self):
-        return self.ds.get('validation', None)
+        return self.ds.get("validation", None)
 
     @property
     def test(self):
-        return self.ds.get('test', None)
+        return self.ds.get("test", None)
 
     @property
     def all_documents(self):
@@ -47,48 +47,47 @@ class Corpus:
         for split in [self.train, self.val, self.test]:
             if split is None:
                 continue
-            for docs, doc_ids in zip(split['text'], split['document_id']):
+            for docs, doc_ids in zip(split["text"], split["document_id"]):
                 for text, doc_id in zip(docs, doc_ids):
                     if doc_id not in seen:
                         seen.add(doc_id)
                         unique_text.append(text)
                         unique_ids.append(doc_id)
 
-        return Dataset.from_dict({'text': unique_text, 'document_id': unique_ids})
+        return Dataset.from_dict({"text": unique_text, "document_id": unique_ids})
 
     def __load_data(self, base_dir) -> dict[Dataset]:
-        assert self.dataset_name in ['squad', 'fiqa'], (
+        assert self.dataset_name in ["squad", "fiqa"], (
             f'Dataset {self.dataset_name} not supported. Options are ["squad", "fiqa"]'
         )
 
-        if self.dataset_name == 'fiqa':
+        if self.dataset_name == "fiqa":
             ds = get_fiqa_dataset(base_dir)
-        elif self.dataset_name == 'squad':
+        elif self.dataset_name == "squad":
             ds = get_squad_dataset(base_dir)
 
         data_dict = {key: ds[key] for key in ds.keys()}
 
         # SQuAD only has 'train' and 'validation' — split validation 50/50 into validation + test
-        if 'test' not in data_dict and 'validation' in data_dict:
-            split = data_dict['validation'].train_test_split(test_size=0.5, seed=42)
-            data_dict['validation'] = split['train']
-            data_dict['test'] = split['test']
+        if "test" not in data_dict and "validation" in data_dict:
+            split = data_dict["validation"].train_test_split(test_size=0.5, seed=42)
+            data_dict["validation"] = split["train"]
+            data_dict["test"] = split["test"]
 
         return data_dict
 
     def __rename_columns(self) -> dict[Dataset]:
         column_mapping = {
-            'fiqa': 'ground_truths',
-            'squad': 'context',
+            "fiqa": "ground_truths",
+            "squad": "context",
         }
 
         for key in self.ds:
-            self.ds[key] = self.ds[key].rename_column(column_mapping[self.dataset_name], 'text')
+            self.ds[key] = self.ds[key].rename_column(column_mapping[self.dataset_name], "text")
             # Ensure 'text' is always list[str] (in SQuAD, context is a single str)
-            if self.dataset_name == 'squad':
-                self.ds[key] = self.ds[key].map(lambda row: {'text': [row['text']]})
+            if self.dataset_name == "squad":
+                self.ds[key] = self.ds[key].map(lambda row: {"text": [row["text"]]})
         return self.ds
-
 
     def __assign_ids(self):
         q_id_counter = 0
@@ -100,33 +99,32 @@ class Corpus:
             query_ids = []
             document_ids = []
             for i in range(len(self.ds[key])):
-                query_ids.append(f'q{q_id_counter}')
-                documents = self.ds[key]['text'][i]
+                query_ids.append(f"q{q_id_counter}")
+                documents = self.ds[key]["text"][i]
                 relevant_ids = []
                 for doc in documents:
                     if doc not in seen_docs:
-                        seen_docs[doc] = f'doc{doc_id_counter}'
+                        seen_docs[doc] = f"doc{doc_id_counter}"
                         doc_id_counter += 1
                     relevant_ids.append(seen_docs[doc])
 
                 document_ids.append(relevant_ids)
-                relevant_document_ids[f'q{q_id_counter}'] = relevant_ids
+                relevant_document_ids[f"q{q_id_counter}"] = relevant_ids
                 q_id_counter += 1
 
-            self.ds[key] = self.ds[key].add_column('query_id', query_ids)
-            self.ds[key] = self.ds[key].add_column('document_id', document_ids)
+            self.ds[key] = self.ds[key].add_column("query_id", query_ids)
+            self.ds[key] = self.ds[key].add_column("document_id", document_ids)
 
         return relevant_document_ids
 
-
     def get_batch(self, batch_size: int, split: str = "train", shuffle: bool = True):
-        assert split in ["train", "val", "test"], f"Split {split} not supported. Options are [\"train\", \"val\", \"test\"]"
+        assert split in ["train", "val", "test"], f'Split {split} not supported. Options are ["train", "val", "test"]'
         dataset = self.ds[split]
         if shuffle:
             dataset = dataset.shuffle()
         for i in range(0, len(dataset), batch_size):
-            yield dataset[i:i + batch_size]
+            yield dataset[i : i + batch_size]
 
     def get_length(self, split: str = "train"):
-        assert split in ["train", "val", "test"], f"Split {split} not supported. Options are [\"train\", \"val\", \"test\"]"
+        assert split in ["train", "val", "test"], f'Split {split} not supported. Options are ["train", "val", "test"]'
         return len(self.ds[split])

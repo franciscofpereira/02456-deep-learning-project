@@ -8,30 +8,45 @@ from src.retrievers.models.pre_trained_encoder import PretrainedEncoder
 from tqdm import tqdm
 import random
 
+
 class Trainer:
-    def __init__(self, device: torch.device, cfg=None, temperature = 0.1):
+    def __init__(self, device: torch.device, cfg=None, temperature=0.1):
         self.criterion = DPRLoss(temperature=temperature)
         self.device = device
         self.cfg = cfg
-        
+
     def train(
-            self,
-            query_encoder: TransformerEncoder | PretrainedEncoder,
-            document_encoder: TransformerEncoder | PretrainedEncoder,
-            corpus: Corpus,
-            tokenizer,
-            epochs: int = 10,
-            batch_size: int = 32,
-            learning_rate: float = 1e-4,
-            max_seq_length: int = 256,
-            query_encoder_weights_path: str = "retrieval_data/query_encoder_weights.pt",
-            document_encoder_weights_path: str = "retrieval_data/document_encoder_weights.pt",  
-            hard_negatives: list[str] | None = None     
+        self,
+        query_encoder: TransformerEncoder | PretrainedEncoder,
+        document_encoder: TransformerEncoder | PretrainedEncoder,
+        corpus: Corpus,
+        tokenizer,
+        epochs: int = 10,
+        batch_size: int = 32,
+        learning_rate: float = 1e-4,
+        max_seq_length: int = 256,
+        query_encoder_weights_path: str = "retrieval_data/query_encoder_weights.pt",
+        document_encoder_weights_path: str = "retrieval_data/document_encoder_weights.pt",
+        hard_negatives: list[str] | None = None,
     ):
 
-        params = list(dict.fromkeys(
-            list(query_encoder.parameters()) + list(document_encoder.parameters())
-        ))  
+        """
+        Train the query and document encoders using the provided corpus and hard negatives.
+        Args:
+            query_encoder: The query encoder model.
+            document_encoder: The document encoder model.
+            corpus: The Corpus object containing training data.
+            tokenizer: The tokenizer to use for tokenizing queries and documents.
+            epochs: Number of training epochs.
+            batch_size: Batch size for training.
+            learning_rate: Learning rate for the optimizer.
+            max_seq_length: Maximum sequence length for tokenization.
+            query_encoder_weights_path: Path to save the trained query encoder weights.
+            document_encoder_weights_path: Path to save the trained document encoder weights.
+            hard_negatives: Optional list of hard negative documents for training.
+        """
+        
+        params = list(dict.fromkeys(list(query_encoder.parameters()) + list(document_encoder.parameters())))
         optimizer = torch.optim.AdamW(params, lr=learning_rate, weight_decay=0.1)
 
         if hasattr(corpus, "ds") and "train" in corpus.ds:
@@ -53,7 +68,9 @@ class Trainer:
         document_encoder.to(self.device).train()
 
         max_seq_length = query_encoder.max_seq_length
-        total_batches = (corpus.get_length("train") + batch_size - 1) // batch_size if corpus.get_length("train") else None
+        total_batches = (
+            (corpus.get_length("train") + batch_size - 1) // batch_size if corpus.get_length("train") else None
+        )
 
         use_amp = self.device.type == "cuda"
         scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
@@ -65,7 +82,6 @@ class Trainer:
             corpus.ds["train"] = corpus.ds["train"].add_column("hard_negative", hard_negatives)
 
         for epoch in range(epochs):
-  
             total_loss = 0.0
             total_samples = 0
 
@@ -77,43 +93,31 @@ class Trainer:
             )
 
             for batch in pbar:
-                
                 optimizer.zero_grad()
 
                 # Tokenize queries
                 query_tokenized = tokenizer(
-                    batch['question'],
-                    padding=True, 
-                    truncation=True, 
-                    max_length=max_seq_length, 
-                    return_tensors='pt'
-                    ).to(self.device)
+                    batch["question"], padding=True, truncation=True, max_length=max_seq_length, return_tensors="pt"
+                ).to(self.device)
 
-                positive_texts = [random.choice(docs) if docs else "" for docs in batch['text']]
+                positive_texts = [random.choice(docs) if docs else "" for docs in batch["text"]]
 
                 # Tokenize documents
                 document_tokenized = tokenizer(
-                    positive_texts, 
-                    padding=True, 
-                    truncation=True, 
-                    max_length=max_seq_length, 
-                    return_tensors='pt'
-                    ).to(self.device)
+                    positive_texts, padding=True, truncation=True, max_length=max_seq_length, return_tensors="pt"
+                ).to(self.device)
 
                 # Run forward pass through query
                 with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
-                    query_embeddings = query_encoder(
-                        query_tokenized["input_ids"], query_tokenized["attention_mask"]
-                    )
+                    query_embeddings = query_encoder(query_tokenized["input_ids"], query_tokenized["attention_mask"])
                     positive_document_embeddings = document_encoder(
                         document_tokenized["input_ids"], document_tokenized["attention_mask"]
                     )
 
                 # If hard negatives are provided, compute their embeddings
                 train_data = corpus.train
-                
-                if "hard_negative" in batch:
 
+                if "hard_negative" in batch:
                     neg_tokenized = tokenizer(
                         batch["hard_negative"],
                         padding=True,
@@ -124,12 +128,10 @@ class Trainer:
 
                     with torch.amp.autocast("cuda", dtype=torch.float16, enabled=use_amp):
                         hard_neg_embeddings = document_encoder(
-                          neg_tokenized["input_ids"], neg_tokenized["attention_mask"]
+                            neg_tokenized["input_ids"], neg_tokenized["attention_mask"]
                         )
 
-                    all_doc_embeddings = torch.cat(
-                        [positive_document_embeddings, hard_neg_embeddings], dim=0
-                    )
+                    all_doc_embeddings = torch.cat([positive_document_embeddings, hard_neg_embeddings], dim=0)
 
                 else:
                     all_doc_embeddings = positive_document_embeddings
@@ -153,12 +155,9 @@ class Trainer:
                 )
 
         query_encoder.eval()
-        document_encoder.eval()  
-        
-    
+        document_encoder.eval()
+
         os.makedirs(os.path.dirname(query_encoder_weights_path), exist_ok=True)
         os.makedirs(os.path.dirname(document_encoder_weights_path), exist_ok=True)
         torch.save(query_encoder.state_dict(), query_encoder_weights_path)
         torch.save(document_encoder.state_dict(), document_encoder_weights_path)
-
-        

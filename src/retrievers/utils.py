@@ -1,6 +1,7 @@
 from src.retrievers.base_retriever import Retriever
 from src.data_utils.query import Query
 
+
 def retrieveQueryAndGetRelevancies(model: Retriever, queries: list[Query], k: int):
     """
     @param model: Retrieval model
